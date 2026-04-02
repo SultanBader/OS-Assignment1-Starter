@@ -30,6 +30,10 @@ class Process implements Runnable {
     private int timeQuantum; // Time slice (time quantum) allowed per CPU access (in milliseconds)
     private int remainingTime; // Time left for the process to finish its execution
 
+    // 3 Feature: Track arrival time and total waiting time
+    private long arrivalTime;
+    private long waitingTime = 0;
+
     // 1 Feature: Add priority to each process
     private int priority;
 
@@ -39,14 +43,21 @@ class Process implements Runnable {
         this.burstTime = burstTime;
         this.timeQuantum = timeQuantum;
         this.remainingTime = burstTime; // Initially, remaining time is equal to the burst time
+        this.priority = priority; // 1 Feature: Set the priority of the process
 
-        // 1 Feature: Set the priority of the process
-        this.priority = priority;
+        // 3 Feature: Record initial arrival time of the process
+        this.arrivalTime = System.currentTimeMillis();
+
     }
 
     // This method will be called when the thread for this process is started
     @Override
     public void run() {
+
+        // 3 Feature: Calculate waiting time before execution starts
+        long startTime = System.currentTimeMillis();
+        waitingTime += (startTime - arrivalTime);
+
         // Simulate running for either the time quantum or remaining time, whichever is
         // smaller
         int runTime = Math.min(timeQuantum, remainingTime); // Run for the smaller of the two times
@@ -90,6 +101,10 @@ class Process implements Runnable {
         if (remainingTime > 0) {
             System.out.println(Colors.BLUE + "  ↻ " + Colors.CYAN + name + Colors.RESET +
                     " yields CPU for context switch" + Colors.RESET);
+
+            // 3 Feature: Update arrival time when process goes back to queue
+            arrivalTime = System.currentTimeMillis();
+
         } else {
             // If no time is left, the process has finished its execution
             System.out.println(Colors.BRIGHT_GREEN + "  ✓ " + Colors.BOLD + Colors.CYAN + name +
@@ -147,6 +162,11 @@ class Process implements Runnable {
     // 1 Feature: Getter method to return process priority for scheduling display
     public int getPriority() {
         return priority;
+    }
+
+    // 3 Feature: Return total waiting time of the process
+    public long getWaitingTime() {
+        return waitingTime;
     }
 
     // Check if the process has finished (i.e., no remaining time)
@@ -306,6 +326,12 @@ public class SchedulerSimulation {
         // 2 Feature: Display total number of context switches at the end of simulation
         System.out.println("Total context switches: " + contextSwitches);
 
+        // 3 Feature: Display waiting time summary for all processes
+        System.out.println("\nProcess Summary:");
+        for (Process p : processMap.values()) {
+            System.out.println(p.getName() + " | Burst: " + p.getBurstTime() +
+                    " | Waiting: " + p.getWaitingTime());
+        }
     }
 
     // Method to add a process to the queue and map, while printing a "ready"
